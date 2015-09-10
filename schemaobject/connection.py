@@ -1,5 +1,6 @@
-import MySQLdb
 import re
+
+import MySQLdb
 
 REGEX_RFC1738 = re.compile(r'''
             (?P<protocol>\w+)://
@@ -60,6 +61,8 @@ class DatabaseConnection(object):
 
     def execute(self, sql, values=None):
         cursor = self._db.cursor()
+        if isinstance(values, (basestring, unicode)):
+            values = (values,)
         cursor.execute(sql, values)
 
         if not cursor.rowcount:
@@ -69,7 +72,7 @@ class DatabaseConnection(object):
         rows = cursor.fetchall()
 
         cursor.close()
-        return  [dict(zip(fields, row)) for row in rows]
+        return [dict(zip(fields, row)) for row in rows]
 
     def connect(self, connection_url):
         """Connect to the database"""
@@ -86,6 +89,16 @@ class DatabaseConnection(object):
         # can't pass protocol to MySQLdb
         del kwargs['protocol']
         self._db = MySQLdb.connect(**kwargs)
+
+    @property
+    def session(self):
+        return self._db
+
+    def commit(self):
+        return self._db.commit()
+
+    def rollback(self):
+        return self._db.rollback()
 
     def close(self):
         """Close the database connection."""
